@@ -1,0 +1,35 @@
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.kpi {
+  border-left: 4px solid #2a78d6;
+  padding: 6px 12px;
+}
+
+.kpi-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #0b0b0b;
+}
+
+.kpi-label {
+  font-size: 0.95rem;
+  color: #52514e;
+}
+
+.kpi-note {
+  font-size: 0.8rem;
+  color: #7a7974;
+  min-height: 1em;
+}
+
+.sidebar-note {
+  font-size: 0.85rem;
+  color: #52514e;
+  margin-top: 1rem;
+}

@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.33">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Mouataz Bounit">
+<meta name="dcterms.date" content="2026-11-17">
+
+<title>Road accidents in France, 2005-2025</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="report_files/libs/clipboard/clipboard.min.js"></script>
+<script src="report_files/libs/quarto-html/quarto.js"></script>
+<script src="report_files/libs/quarto-html/popper.min.js"></script>
+<script src="report_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="report_files/libs/quarto-html/anchor.min.js"></script>
+<link href="report_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="report_files/libs/quarto-html/quarto-syntax-highlighting-07ba0ad10f5680c660e360ac31d2f3b6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="report_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="report_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="report_files/libs/bootstrap/bootstrap-545cdd561de3535e9b364c647f747893.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul class="collapse">
+  <li><a href="#introduction-and-data" id="toc-introduction-and-data" class="nav-link active" data-scroll-target="#introduction-and-data"><span class="header-section-number">1</span> Introduction and data</a>
+  <ul class="collapse">
+  <li><a href="#context-and-question" id="toc-context-and-question" class="nav-link" data-scroll-target="#context-and-question"><span class="header-section-number">1.1</span> Context and question</a></li>
+  <li><a href="#the-baac-databases" id="toc-the-baac-databases" class="nav-link" data-scroll-target="#the-baac-databases"><span class="header-section-number">1.2</span> The BAAC databases</a></li>
+  </ul></li>
+  <li><a href="#data-engineering" id="toc-data-engineering" class="nav-link" data-scroll-target="#data-engineering"><span class="header-section-number">2</span> Data engineering</a>
+  <ul class="collapse">
+  <li><a href="#harmonising-21-years-of-files" id="toc-harmonising-21-years-of-files" class="nav-link" data-scroll-target="#harmonising-21-years-of-files"><span class="header-section-number">2.1</span> Harmonising 21 years of files</a></li>
+  <li><a href="#quality-checks" id="toc-quality-checks" class="nav-link" data-scroll-target="#quality-checks"><span class="header-section-number">2.2</span> Quality checks</a></li>
+  <li><a href="#correct-joins" id="toc-correct-joins" class="nav-link" data-scroll-target="#correct-joins"><span class="header-section-number">2.3</span> Correct joins</a></li>
+  <li><a href="#new-variables" id="toc-new-variables" class="nav-link" data-scroll-target="#new-variables"><span class="header-section-number">2.4</span> New variables</a></li>
+  </ul></li>
+  <li><a href="#exploratory-analysis" id="toc-exploratory-analysis" class="nav-link" data-scroll-target="#exploratory-analysis"><span class="header-section-number">3</span> Exploratory analysis</a>
+  <ul class="collapse">
+  <li><a href="#over-time" id="toc-over-time" class="nav-link" data-scroll-target="#over-time"><span class="header-section-number">3.1</span> Over time</a></li>
+  <li><a href="#conditions-roads-and-vehicles" id="toc-conditions-roads-and-vehicles" class="nav-link" data-scroll-target="#conditions-roads-and-vehicles"><span class="header-section-number">3.2</span> Conditions, roads and vehicles</a></li>
+  <li><a href="#who-is-involved" id="toc-who-is-involved" class="nav-link" data-scroll-target="#who-is-involved"><span class="header-section-number">3.3</span> Who is involved</a></li>
+  </ul></li>
+  <li><a href="#geography" id="toc-geography" class="nav-link" data-scroll-target="#geography"><span class="header-section-number">4</span> Geography</a></li>
+  <li><a href="#statistical-model-logistic-regression" id="toc-statistical-model-logistic-regression" class="nav-link" data-scroll-target="#statistical-model-logistic-regression"><span class="header-section-number">5</span> Statistical model: logistic regression</a>
+  <ul class="collapse">
+  <li><a href="#specification" id="toc-specification" class="nav-link" data-scroll-target="#specification"><span class="header-section-number">5.1</span> Specification</a></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">5.2</span> Results</a></li>
+  <li><a href="#interactions" id="toc-interactions" class="nav-link" data-scroll-target="#interactions"><span class="header-section-number">5.3</span> Interactions</a></li>
+  </ul></li>
+  <li><a href="#machine-learning" id="toc-machine-learning" class="nav-link" data-scroll-target="#machine-learning"><span class="header-section-number">6</span> Machine learning</a>
+  <ul class="collapse">
+  <li><a href="#set-up" id="toc-set-up" class="nav-link" data-scroll-target="#set-up"><span class="header-section-number">6.1</span> Set-up</a></li>
+  </ul></li>
+  <li><a href="#evaluation-and-interpretability" id="toc-evaluation-and-interpretability" class="nav-link" data-scroll-target="#evaluation-and-interpretability"><span class="header-section-number">7</span> Evaluation and interpretability</a>
+  <ul class="collapse">
+  <li><a href="#performance-on-2024-2025" id="toc-performance-on-2024-2025" class="nav-link" data-scroll-target="#performance-on-2024-2025"><span class="header-section-number">7.1</span> Performance on 2024-2025</a></li>
+  <li><a href="#decisions-and-errors" id="toc-decisions-and-errors" class="nav-link" data-scroll-target="#decisions-and-errors"><span class="header-section-number">7.2</span> Decisions and errors</a></li>
+  <li><a href="#what-the-model-uses" id="toc-what-the-model-uses" class="nav-link" data-scroll-target="#what-the-model-uses"><span class="header-section-number">7.3</span> What the model uses</a></li>
+  </ul></li>
+  <li><a href="#dashboard" id="toc-dashboard" class="nav-link" data-scroll-target="#dashboard"><span class="header-section-number">8</span> Dashboard</a></li>
+  <li><a href="#discussion-and-conclusion" id="toc-discussion-and-conclusion" class="nav-link" data-scroll-target="#discussion-and-conclusion"><span class="header-section-number">9</span> Discussion and conclusion</a>
+  <ul class="collapse">
+  <li><a href="#main-results" id="toc-main-results" class="nav-link" data-scroll-target="#main-results"><span class="header-section-number">9.1</span> Main results</a></li>
+  <li><a href="#statistics-and-machine-learning" id="toc-statistics-and-machine-learning" class="nav-link" data-scroll-target="#statistics-and-machine-learning"><span class="header-section-number">9.2</span> Statistics and machine learning</a></li>
+  <li><a href="#limits" id="toc-limits" class="nav-link" data-scroll-target="#limits"><span class="header-section-number">9.3</span> Limits</a></li>
+  <li><a href="#perspectives" id="toc-perspectives" class="nav-link" data-scroll-target="#perspectives"><span class="header-section-number">9.4</span> Perspectives</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Road accidents in France, 2005-2025</h1>
+<p class="subtitle lead">Who gets seriously hurt, where and why: data engineering, statistics and machine learning</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Mouataz Bounit </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 17, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction-and-data" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction and data</h1>
+<section id="context-and-question" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="context-and-question"><span class="header-section-number">1.1</span> Context and question</h2>
+<p>France recorded 3,442 road deaths in 2025. The number fell steadily until 2013 and has barely moved since. Behind each death there are about six people hospitalised, and the share of each road user group in these casualties is very uneven.</p>
+<p>This project asks one question:</p>
+<blockquote class="blockquote">
+<p><strong>Given that an injury accident has happened, which factors make it more likely that a person is killed or hospitalised?</strong></p>
+</blockquote>
+<p>The question is about <strong>severity</strong>, not about the risk of having an accident: the data only contains accidents in which at least one person was injured. Accidents with material damage only, and the traffic volumes that would give an exposure measure, are not available.</p>
+</section>
+<section id="the-baac-databases" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="the-baac-databases"><span class="header-section-number">1.2</span> The BAAC databases</h2>
+<p>Every injury accident attended by the police produces a <em>Bulletin d’Analyse d’Accident Corporel</em> (BAAC). ONISR publishes them each year on data.gouv.fr as four tables linked by the accident number:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Table</th>
+<th>One row per</th>
+<th>Main variables</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Characteristics</td>
+<td>accident</td>
+<td>date, time, lighting, weather, built-up area, intersection, collision type, department, coordinates</td>
+</tr>
+<tr class="even">
+<td>Places</td>
+<td>accident (main road)</td>
+<td>road category, speed limit, surface, layout, number of lanes</td>
+</tr>
+<tr class="odd">
+<td>Vehicles</td>
+<td>vehicle involved</td>
+<td>vehicle category, obstacle hit, impact point, manoeuvre</td>
+</tr>
+<tr class="even">
+<td>Users</td>
+<td>person involved</td>
+<td>role (driver, passenger, pedestrian), sex, year of birth, severity, safety equipment, trip purpose</td>
+</tr>
+</tbody>
+</table>
+<p>Severity follows the ONISR definitions: <em>killed</em> means died within 30 days, <em>hospitalised</em> means admitted for more than 24 hours, <em>slightly injured</em> means treated without such an admission.</p>
+<p>After cleaning, the study covers <strong>1,337,726 accidents</strong> and <strong>3,005,246 people</strong> from 2005 to 2025, in mainland France and the five overseas departments.</p>
+</section>
+</section>
+<section id="data-engineering" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Data engineering</h1>
+<section id="harmonising-21-years-of-files" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="harmonising-21-years-of-files"><span class="header-section-number">2.1</span> Harmonising 21 years of files</h2>
+<p>The 84 raw files change format several times: the separator goes from <code>,</code> to <code>;</code>, the encoding from latin1 to UTF-8, the accident key is called <code>Accident_Id</code> in 2022, the time is written <code>1930</code> and then <code>19:30</code>, departments use three digits before 2019 (<code>590</code> for Nord, <code>201</code> for Corse-du-Sud), and coordinates switch from degrees × 100,000 with <code>0000000</code> for missing values to decimal degrees. <code>R/02_harmonise.R</code> detects the format of each file and builds one schema with English variable names.</p>
+</section>
+<section id="quality-checks" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="quality-checks"><span class="header-section-number">2.2</span> Quality checks</h2>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 40%">
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Check</th>
+<th style="text-align: right;">Rows</th>
+<th style="text-align: right;">Share</th>
+<th style="text-align: left;">Action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Accidents outside mainland France + 5 overseas departments</td>
+<td style="text-align: right;">3,464</td>
+<td style="text-align: right;">0.26%</td>
+<td style="text-align: left;">removed (only recorded from 2019)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Duplicated accident ids in characteristics</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">none</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Extra place rows for the same accident (2023 onwards)</td>
+<td style="text-align: right;">47,599</td>
+<td style="text-align: right;">3.44%</td>
+<td style="text-align: left;">kept the row of the main road</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Duplicated (accident, vehicle letter) keys before 2019</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">none; from 2019 the unique id_vehicule is used instead</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Duplicated (accident, vehicle letter) keys from 2019</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">solved by joining on id_vehicule</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Users whose vehicle is missing from the vehicle table</td>
+<td style="text-align: right;">22</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">kept, vehicle variables set to missing</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Accidents without any user</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">none</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Accidents without a place row</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">kept, place variables missing</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Birth year giving an age below 0 or above 105</td>
+<td style="text-align: right;">395</td>
+<td style="text-align: right;">0.01%</td>
+<td style="text-align: left;">birth year set to missing</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Users with unknown severity</td>
+<td style="text-align: right;">418</td>
+<td style="text-align: right;">0.01%</td>
+<td style="text-align: left;">excluded from severity analyses (mostly hit-and-run users added from 2021)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Invalid time of day</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">set to missing</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Invalid calendar date</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">none</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Mainland accidents with coordinates outside mainland France</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">coordinates set to missing</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Speed limit outside 5-130 km/h</td>
+<td style="text-align: right;">248</td>
+<td style="text-align: right;">0.07%</td>
+<td style="text-align: left;">set to missing</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Accidents where the worst severity cannot be computed</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00%</td>
+<td style="text-align: left;">none</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Three choices shape the rest of the analysis:</p>
+<ul>
+<li><strong>Scope.</strong> Overseas collectivities (Polynesia, New Caledonia, Saint-Martin…) only appear from 2019 and are excluded so that the series stay comparable.</li>
+<li><strong>Severity break.</strong> ONISR warns that “hospitalised” is recorded differently from 2018 and cannot be compared with earlier years: the number of hospitalised people falls by about a quarter between 2017 and 2018 while deaths barely move. All severity rates and models therefore use <strong>2019-2025</strong>, where vehicle categories are also coded consistently.</li>
+<li><strong>Several place rows per accident from 2023.</strong> One row per road at an intersection: the main road (lowest road category code) is kept.</li>
+</ul>
+</section>
+<section id="correct-joins" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="correct-joins"><span class="header-section-number">2.3</span> Correct joins</h2>
+<p>Each person is linked to <strong>their own vehicle</strong> (pedestrians to the vehicle that hit them), with the unique <code>id_vehicule</code> from 2019 and the vehicle letter before. The first version of this project joined users and vehicles on the accident number alone, which pairs every person with every vehicle of the accident. Joining users and vehicles on the accident id alone gives 5,703,904 rows instead of 3,005,246 (+90%): every count of that version was inflated.</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Consistency test</th>
+<th style="text-align: left;">Result</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Every user kept exactly once after the joins</td>
+<td style="text-align: left;">passed</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Every accident kept exactly once</td>
+<td style="text-align: left;">passed</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Users per accident match n_users</td>
+<td style="text-align: left;">passed</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Killed users match the accident totals</td>
+<td style="text-align: left;">passed</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">All users have a mode</td>
+<td style="text-align: left;">passed</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ages within 0-105</td>
+<td style="text-align: left;">passed</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="new-variables" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="new-variables"><span class="header-section-number">2.4</span> New variables</h2>
+<p>Age and age group, period of the day, weekday, vehicle groups mapped across the two vehicle nomenclatures, the person’s <strong>mode</strong> (their vehicle, or <em>pedestrian</em>), the <strong>heaviest other party</strong> in the accident, the use of a <strong>belt or helmet</strong> (from 2019), speed-limit classes, and the target <strong>severe = killed or hospitalised</strong>.</p>
+</section>
+</section>
+<section id="exploratory-analysis" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Exploratory analysis</h1>
+<section id="over-time" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="over-time"><span class="header-section-number">3.1</span> Over time</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../figures/03_eda/01_yearly_trend.png" class="img-fluid figure-img" width="825"></p>
+<figcaption>Accidents and casualties per year. The dashed line marks the change in how hospitalised people are recorded.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Deaths fell from 5,543 in 2005 to 3,427 in 2013 (-38%), then stayed between 3,100 and 3,700 apart from the 2020 lockdowns (2,706). There were 3,442 deaths in 2025.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/02_month.png" class="img-fluid figure-img" width="750"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/03_hour_weekday.png" class="img-fluid figure-img" width="750"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/04_fatality_by_hour.png" class="img-fluid figure-img" width="675"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Accidents follow commuting hours on weekdays and shift to nights at weekends. Night accidents are far fewer but much deadlier.</p>
+</section>
+<section id="conditions-roads-and-vehicles" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="conditions-roads-and-vehicles"><span class="header-section-number">3.2</span> Conditions, roads and vehicles</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/05_conditions.png" class="img-fluid figure-img" width="675"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/06_roads.png" class="img-fluid figure-img" width="675"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/07_mode_severity.png" class="img-fluid figure-img" width="750"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/08_killed_by_mode_year.png" class="img-fluid figure-img" width="825"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Between 2019 and 2025, 37% of motorcyclists, 33% of pedestrians and 28% of cyclists involved in an accident were killed or hospitalised, against 12.5% of car occupants.</p>
+</section>
+<section id="who-is-involved" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="who-is-involved"><span class="header-section-number">3.3</span> Who is involved</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/09_age_sex.png" class="img-fluid figure-img" width="825"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/03_eda/10_opponent.png" class="img-fluid figure-img" width="825"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="geography" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Geography</h1>
+<p>Counts mostly reflect population, so every map shows a rate. Over 2021-2025, deaths per million inhabitants range from 14 in Hauts-de-Seine to 115 in Haute-Marne, and deaths per 100 accidents from 0.8 in Paris to 17.6 in Haute-Marne.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/04_geography/01_department_maps.png" class="img-fluid figure-img" width="1050"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/04_geography/03_frequency_vs_severity.png" class="img-fluid figure-img" width="712"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/04_geography/02_change_map.png" class="img-fluid figure-img" width="488"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The <a href="../figures/04_geography/interactive_map.html">interactive map</a> shows the department rates and every fatal accident of 2025.</p>
+</section>
+<section id="statistical-model-logistic-regression" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Statistical model: logistic regression</h1>
+<section id="specification" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="specification"><span class="header-section-number">5.1</span> Specification</h2>
+<p><span class="math display">\[\text{logit}\, P(\text{severe}_i = 1) = \alpha_{t} + \sum_k \beta_k x_{ik}\]</span></p>
+<p>for each person <span class="math inline">\(i\)</span> involved in an accident in 2019-2025, with year fixed effects <span class="math inline">\(\alpha_t\)</span> and only variables known before the impact: mode, passenger, sex, age group, belt or helmet, heaviest other party, road category, built-up area, speed limit, intersection, lighting, weather, surface, time of day, weekend, overseas. Collision type, obstacle and impact point describe the crash itself and are left out on purpose.</p>
+<p>People in the same accident share the road, the speed and the impact, so they are not independent. Standard errors are <strong>clustered by accident</strong>; they are in median 11% wider than the naive ones.</p>
+</section>
+<section id="results" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="results"><span class="header-section-number">5.2</span> Results</h2>
+<p>The model is estimated on 841,052 people. In-sample ROC-AUC is 0.829 and McFadden’s pseudo-R² 0.238.</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Factor</th>
+<th style="text-align: left;">Odds ratio [95% CI]</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Pedestrian (vs car occupant)</td>
+<td style="text-align: left;">10.03 [9.77-10.30]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Motorcyclist (vs car occupant)</td>
+<td style="text-align: left;">6.49 [6.35-6.63]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Cyclist (vs car occupant)</td>
+<td style="text-align: left;">4.02 [3.89-4.15]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Belt or helmet not worn (vs worn)</td>
+<td style="text-align: left;">4.30 [4.13-4.47]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Aged 75+ (vs 35-44)</td>
+<td style="text-align: left;">3.29 [3.19-3.39]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Other party: heavy goods vehicle (vs car)</td>
+<td style="text-align: left;">2.69 [2.59-2.79]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">No other vehicle (vs car)</td>
+<td style="text-align: left;">1.94 [1.91-1.98]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Outside built-up area</td>
+<td style="text-align: left;">2.51 [2.44-2.58]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Speed limit 130 (vs 40-50)</td>
+<td style="text-align: left;">4.88 [4.57-5.21]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Motorway (vs municipal road)</td>
+<td style="text-align: left;">0.28 [0.27-0.30]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Night, 22h-6h (vs 10h-16h)</td>
+<td style="text-align: left;">1.56 [1.51-1.61]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Night without street lights (vs daylight)</td>
+<td style="text-align: left;">1.23 [1.20-1.27]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Man (vs woman)</td>
+<td style="text-align: left;">1.05 [1.03-1.06]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/05_model/01_odds_ratios.png" class="img-fluid figure-img" width="825"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Two raw contrasts shrink once the other factors are held equal. Unlit roads at night multiplied the share of people killed by 2.7 in the descriptive analysis; their odds ratio is 1.23 [1.20-1.27], because most of that effect came from night-time and rural roads. Men make up nearly four deaths in five, but once involved in the same kind of accident they are barely more likely to be seriously hurt (1.05 [1.03-1.06]): the gap comes from exposure and behaviour, not from the outcome of a given crash.</p>
+<p>Correlated variables must be read together: the 130 km/h limit has a high odds ratio but only occurs on motorways, whose own odds ratio is low.</p>
+</section>
+<section id="interactions" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="interactions"><span class="header-section-number">5.3</span> Interactions</h2>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Interaction</th>
+<th style="text-align: left;">Wald statistic</th>
+<th style="text-align: right;">df</th>
+<th style="text-align: left;">p-value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Mode x built-up area</td>
+<td style="text-align: left;">44.4</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: left;">&lt;2e-16</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Age x pedestrian</td>
+<td style="text-align: left;">28.4</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: left;">&lt;2e-16</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/05_model/02_mode_by_location.png" class="img-fluid figure-img" width="825"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/05_model/03_age_pedestrian.png" class="img-fluid figure-img" width="675"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Probabilities are averaged over the observed population (each person given the level in turn), which is easier to read than interaction coefficients.</p>
+</section>
+</section>
+<section id="machine-learning" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Machine learning</h1>
+<section id="set-up" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="set-up"><span class="header-section-number">6.1</span> Set-up</h2>
+<ul>
+<li><strong>Same population and target</strong> as the logistic regression.</li>
+<li><strong>Chronological split</strong>: train 2019-2022, validation 2023 (tuning, early stopping, decision thresholds), test 2024-2025. The final models are refitted on 2019-2023 with the tuned settings. A random split would mix years and hide any drift.</li>
+<li><strong>Models</strong>: a prevalence baseline, a “rate by mode” baseline, penalised logistic regression (glmnet; alpha and lambda chosen on the 2023 log loss), random forest (ranger, probability forest) and XGBoost (early stopping on 2023).</li>
+<li><strong>Two feature sets</strong>: pre-impact variables only, and pre-impact plus crash variables (collision type, obstacle, impact point, manoeuvre).</li>
+</ul>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Validation year 2023</caption>
+<colgroup>
+<col style="width: 26%">
+<col style="width: 11%">
+<col style="width: 31%">
+<col style="width: 10%">
+<col style="width: 8%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Model</th>
+<th style="text-align: left;">Features</th>
+<th style="text-align: left;">Setting</th>
+<th style="text-align: left;">ROC-AUC</th>
+<th style="text-align: left;">PR-AUC</th>
+<th style="text-align: left;">Log loss</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Baseline: prevalence</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0.5000</td>
+<td style="text-align: left;">0.1795</td>
+<td style="text-align: left;">0.4742</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Baseline: mode rate</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">0.6644</td>
+<td style="text-align: left;">0.2983</td>
+<td style="text-align: left;">0.4436</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Penalised logistic</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">alpha=0.0 lambda=0.0075</td>
+<td style="text-align: left;">0.8258</td>
+<td style="text-align: left;">0.5115</td>
+<td style="text-align: left;">0.3647</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Penalised logistic</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">alpha=0.5 lambda=0.00065</td>
+<td style="text-align: left;">0.8260</td>
+<td style="text-align: left;">0.5120</td>
+<td style="text-align: left;">0.3642</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Penalised logistic</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">alpha=1.0 lambda=0.00041</td>
+<td style="text-align: left;">0.8260</td>
+<td style="text-align: left;">0.5120</td>
+<td style="text-align: left;">0.3641</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Penalised logistic</td>
+<td style="text-align: left;">crash</td>
+<td style="text-align: left;">alpha=1.0 lambda=0.00013</td>
+<td style="text-align: left;">0.8457</td>
+<td style="text-align: left;">0.5420</td>
+<td style="text-align: left;">0.3485</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">mtry=4 min.node.size=50</td>
+<td style="text-align: left;">0.8430</td>
+<td style="text-align: left;">0.5474</td>
+<td style="text-align: left;">0.3495</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">mtry=4 min.node.size=300</td>
+<td style="text-align: left;">0.8407</td>
+<td style="text-align: left;">0.5407</td>
+<td style="text-align: left;">0.3521</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">mtry=7 min.node.size=50</td>
+<td style="text-align: left;">0.8423</td>
+<td style="text-align: left;">0.5465</td>
+<td style="text-align: left;">0.3518</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">mtry=7 min.node.size=300</td>
+<td style="text-align: left;">0.8413</td>
+<td style="text-align: left;">0.5414</td>
+<td style="text-align: left;">0.3508</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">max_depth=4 rounds=2332</td>
+<td style="text-align: left;">0.8466</td>
+<td style="text-align: left;">0.5534</td>
+<td style="text-align: left;">0.3462</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">max_depth=6 rounds=858</td>
+<td style="text-align: left;">0.8467</td>
+<td style="text-align: left;">0.5535</td>
+<td style="text-align: left;">0.3461</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: left;">pre</td>
+<td style="text-align: left;">max_depth=8 rounds=484</td>
+<td style="text-align: left;">0.8468</td>
+<td style="text-align: left;">0.5539</td>
+<td style="text-align: left;">0.3461</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: left;">crash</td>
+<td style="text-align: left;">max_depth=8 rounds=610</td>
+<td style="text-align: left;">0.8693</td>
+<td style="text-align: left;">0.5933</td>
+<td style="text-align: left;">0.3252</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 26%">
+<col style="width: 73%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Model</th>
+<th style="text-align: left;">Chosen setting</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Penalised logistic</td>
+<td style="text-align: left;">alpha=1.0, lambda=0.00041, 64 non-zero coefficients</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">mtry=4, min.node.size=50, 300 trees</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: left;">max_depth=8, eta=0.05, 484 rounds</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="evaluation-and-interpretability" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Evaluation and interpretability</h1>
+<section id="performance-on-2024-2025" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="performance-on-2024-2025"><span class="header-section-number">7.1</span> Performance on 2024-2025</h2>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Test years 2024-2025, 18.3% killed or hospitalised. Intervals: 200 bootstrap samples of whole accidents.</caption>
+<colgroup>
+<col style="width: 39%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 9%">
+<col style="width: 7%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Model</th>
+<th style="text-align: left;">ROC-AUC [95% CI]</th>
+<th style="text-align: left;">PR-AUC [95% CI]</th>
+<th style="text-align: left;">Log loss</th>
+<th style="text-align: left;">Brier</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Baseline: prevalence</td>
+<td style="text-align: left;">0.500 [0.500-0.500]</td>
+<td style="text-align: left;">0.183 [0.181-0.186]</td>
+<td style="text-align: left;">0.4764</td>
+<td style="text-align: left;">0.1497</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Baseline: rate by mode</td>
+<td style="text-align: left;">0.669 [0.666-0.673]</td>
+<td style="text-align: left;">0.308 [0.304-0.312]</td>
+<td style="text-align: left;">0.4440</td>
+<td style="text-align: left;">0.1395</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Penalised logistic</td>
+<td style="text-align: left;">0.825 [0.823-0.827]</td>
+<td style="text-align: left;">0.516 [0.511-0.520]</td>
+<td style="text-align: left;">0.3657</td>
+<td style="text-align: left;">0.1159</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">0.843 [0.841-0.844]</td>
+<td style="text-align: left;">0.548 [0.542-0.552]</td>
+<td style="text-align: left;">0.3510</td>
+<td style="text-align: left;">0.1114</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: left;">0.846 [0.844-0.848]</td>
+<td style="text-align: left;">0.555 [0.550-0.559]</td>
+<td style="text-align: left;">0.3478</td>
+<td style="text-align: left;">0.1106</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Penalised logistic + crash variables</td>
+<td style="text-align: left;">0.846 [0.844-0.848]</td>
+<td style="text-align: left;">0.546 [0.541-0.551]</td>
+<td style="text-align: left;">0.3497</td>
+<td style="text-align: left;">0.1113</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">XGBoost + crash variables</td>
+<td style="text-align: left;">0.869 [0.867-0.871]</td>
+<td style="text-align: left;">0.600 [0.595-0.605]</td>
+<td style="text-align: left;">0.3259</td>
+<td style="text-align: left;">0.1042</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Comparison</th>
+<th style="text-align: left;">Difference</th>
+<th style="text-align: left;">95% interval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">XGBoost - logistic, ROC-AUC</td>
+<td style="text-align: left;">0.0205</td>
+<td style="text-align: left;">[0.0196, 0.0215]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">XGBoost - logistic, PR-AUC</td>
+<td style="text-align: left;">0.0395</td>
+<td style="text-align: left;">[0.0367, 0.0423]</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">XGBoost - random forest, ROC-AUC</td>
+<td style="text-align: left;">0.0034</td>
+<td style="text-align: left;">[0.0028, 0.0040]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">XGBoost + crash - XGBoost, ROC-AUC</td>
+<td style="text-align: left;">0.0234</td>
+<td style="text-align: left;">[0.0224, 0.0245]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>XGBoost ranks people best (ROC-AUC 0.846), ahead of the random forest (0.843) and the penalised logistic regression (0.825). The gain over the logistic regression is small but certain (paired bootstrap interval above zero). Adding the crash variables raises XGBoost to 0.869, which shows how much of the outcome is decided by the crash itself.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/07_evaluation/01_roc_pr_curves.png" class="img-fluid figure-img" width="975"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/07_evaluation/02_calibration.png" class="img-fluid figure-img" width="638"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="decisions-and-errors" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="decisions-and-errors"><span class="header-section-number">7.2</span> Decisions and errors</h2>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Threshold chosen on 2023 to maximise F1, applied unchanged to 2024-2025</caption>
+<colgroup>
+<col style="width: 44%">
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 8%">
+<col style="width: 7%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Model</th>
+<th style="text-align: left;">Threshold</th>
+<th style="text-align: left;">Precision</th>
+<th style="text-align: left;">Recall</th>
+<th style="text-align: left;">F1</th>
+<th style="text-align: left;">Share flagged</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Baseline: rate by mode</td>
+<td style="text-align: left;">0.158</td>
+<td style="text-align: left;">32.5%</td>
+<td style="text-align: left;">54.9%</td>
+<td style="text-align: left;">0.409</td>
+<td style="text-align: left;">31.0%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Penalised logistic</td>
+<td style="text-align: left;">0.260</td>
+<td style="text-align: left;">45.0%</td>
+<td style="text-align: left;">61.5%</td>
+<td style="text-align: left;">0.520</td>
+<td style="text-align: left;">25.0%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Random forest</td>
+<td style="text-align: left;">0.287</td>
+<td style="text-align: left;">47.2%</td>
+<td style="text-align: left;">63.5%</td>
+<td style="text-align: left;">0.541</td>
+<td style="text-align: left;">24.6%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">XGBoost</td>
+<td style="text-align: left;">0.274</td>
+<td style="text-align: left;">47.2%</td>
+<td style="text-align: left;">64.9%</td>
+<td style="text-align: left;">0.546</td>
+<td style="text-align: left;">25.2%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Penalised logistic + crash variables</td>
+<td style="text-align: left;">0.261</td>
+<td style="text-align: left;">46.0%</td>
+<td style="text-align: left;">67.2%</td>
+<td style="text-align: left;">0.546</td>
+<td style="text-align: left;">26.8%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">XGBoost + crash variables</td>
+<td style="text-align: left;">0.292</td>
+<td style="text-align: left;">50.0%</td>
+<td style="text-align: left;">68.4%</td>
+<td style="text-align: left;">0.578</td>
+<td style="text-align: left;">25.1%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/07_evaluation/03_confusion_matrices.png" class="img-fluid figure-img" width="825"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Mode</th>
+<th style="text-align: left;">Severe cases</th>
+<th style="text-align: left;">Missed by XGBoost</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Car</td>
+<td style="text-align: left;">18,257</td>
+<td style="text-align: left;">43%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Motorcycle</td>
+<td style="text-align: left;">10,195</td>
+<td style="text-align: left;">20%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Pedestrian</td>
+<td style="text-align: left;">6,179</td>
+<td style="text-align: left;">28%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Bicycle</td>
+<td style="text-align: left;">3,304</td>
+<td style="text-align: left;">29%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Moped</td>
+<td style="text-align: left;">3,264</td>
+<td style="text-align: left;">30%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">E-scooter / PMD</td>
+<td style="text-align: left;">1,431</td>
+<td style="text-align: left;">67%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Van</td>
+<td style="text-align: left;">1,302</td>
+<td style="text-align: left;">52%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Heavy goods vehicle</td>
+<td style="text-align: left;">336</td>
+<td style="text-align: left;">51%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/07_evaluation/04_auc_by_mode.png" class="img-fluid figure-img" width="675"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The global ROC-AUC is partly carried by the differences <em>between</em> modes. <em>Within</em> a mode the task is much harder: ROC-AUC is 0.86 for car occupants but 0.73 for pedestrians and 0.68 for e-scooter riders. Performance is stable across the two test years (0.847 in 2024, 0.844 in 2025).</p>
+</section>
+<section id="what-the-model-uses" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="what-the-model-uses"><span class="header-section-number">7.3</span> What the model uses</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../figures/07_evaluation/05_shap.png" class="img-fluid figure-img" width="1125"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>SHAP values computed on the final XGBoost rank the mode of transport first, then the heaviest other party, the road and the location. The belt-or-helmet variable has one of the largest odds ratios but a modest mean SHAP value: not wearing one is rare (a few percent of people), so it matters a lot for few people. SHAP importance measures how much a variable moves predictions across the population, not the size of its effect for the people it concerns.</p>
+</section>
+</section>
+<section id="dashboard" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Dashboard</h1>
+<p>The <a href="dashboard.html">interactive dashboard</a> (Quarto, Observable JS) filters every figure by years, department and mode of transport, maps deaths per inhabitant and per accident, and summarises the models. It is a static page: it needs no server and can be published on GitHub Pages.</p>
+</section>
+<section id="discussion-and-conclusion" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Discussion and conclusion</h1>
+<section id="main-results" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="main-results"><span class="header-section-number">9.1</span> Main results</h2>
+<ol type="1">
+<li><strong>The mode of transport decides most of the outcome.</strong> Pedestrians, motorcyclists and cyclists are many times more likely than car occupants to be killed or hospitalised in the same situation.</li>
+<li><strong>The other party and the place come next.</strong> Being hit by a heavy goods vehicle, being outside built-up areas, on departmental roads, at night, and being old all raise the risk. Not wearing a belt or helmet multiplies the odds by about four.</li>
+<li><strong>Some intuitions do not survive adjustment.</strong> Darkness and sex matter much less than raw rates suggest.</li>
+<li><strong>Geography is about road type, not population.</strong> Dense departments have many accidents but few deaths per accident; rural departments the opposite.</li>
+</ol>
+</section>
+<section id="statistics-and-machine-learning" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="statistics-and-machine-learning"><span class="header-section-number">9.2</span> Statistics and machine learning</h2>
+<p>The logistic regression and XGBoost agree on what matters. The regression gives effects with confidence intervals and is easy to explain; XGBoost predicts better (about two points of ROC-AUC, four of PR-AUC) because it captures interactions without specifying them. Both are well calibrated. For a public-health message the regression is the better tool; for ranking cases, XGBoost.</p>
+</section>
+<section id="limits" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="limits"><span class="header-section-number">9.3</span> Limits</h2>
+<ul>
+<li><strong>Selection.</strong> Only injury accidents are recorded, so nothing here measures the risk of an accident or the effect of a factor on accident frequency.</li>
+<li><strong>No exposure data.</strong> Without kilometres travelled per mode, the number of deaths per mode cannot be turned into a risk per kilometre.</li>
+<li><strong>Recording.</strong> “Hospitalised” changed in 2018; equipment use may be checked more carefully when someone is badly hurt; hit-and-run users from 2021 lack information.</li>
+<li><strong>Model scope.</strong> Variables are coarse (no speed driven, alcohol or drugs, which the open data hides for privacy), so within-mode prediction stays limited.</li>
+<li><strong>Causality.</strong> Odds ratios are associations adjusted for the other variables, not causal effects.</li>
+</ul>
+</section>
+<section id="perspectives" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="perspectives"><span class="header-section-number">9.4</span> Perspectives</h2>
+<p>Adding exposure data (traffic counts, mobility surveys) to estimate risks per kilometre; modelling the full ordinal severity scale; a mixed model with department random effects; using the 2025 coordinates to study dangerous road sections; and updating the pipeline each year when ONISR publishes new data.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

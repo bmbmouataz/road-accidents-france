@@ -1,0 +1,15 @@
+road,built_up,accidents,killed_per_100
+Motorway,Built-up area,953,3.2528856243441764
+Motorway,Outside built-up area,34976,5.037740164684355
+National road,Built-up area,6253,5.005597313289621
+National road,Outside built-up area,16904,10.376242309512541
+Departmental road,Built-up area,71640,4.26856504745952
+Departmental road,Outside built-up area,72434,14.451776789905294
+Municipal road,Built-up area,148867,2.3161614058186166
+Municipal road,Outside built-up area,10429,9.818774570908046
+Metropolitan road,Built-up area,8326,4.035551285130915
+Metropolitan road,Outside built-up area,3128,8.695652173913043
+Off public network,Built-up area,248,6.854838709677419
+Off public network,Outside built-up area,189,8.465608465608465
+Car park,Built-up area,2481,4.836759371221282
+Car park,Outside built-up area,330,5.151515151515151

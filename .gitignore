@@ -1,0 +1,41 @@
+# Data: raw files are downloaded by R/01_download.R, intermediate files are rebuilt
+data/raw/
+data/interim/
+data/final/*.parquet
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+renv/staging/
+
+# Quarto: the rendered website in docs/ is versioned for GitHub Pages
+/.quarto/
+/site/*_files/
+/site/*.html
+/index_files/
+/index.html
+
+# System and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials*
+secrets*
+*.log
+
+# LaTeX build files
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.synctex.gz

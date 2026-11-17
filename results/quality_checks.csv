@@ -1,0 +1,16 @@
+check,n,share,action
+Accidents outside mainland France + 5 overseas departments,3464,0.0025827809631744944,removed (only recorded from 2019)
+Duplicated accident ids in characteristics,0,0,none
+Extra place rows for the same accident (2023 onwards),47599,0.03435944633930666,kept the row of the main road
+"Duplicated (accident, vehicle letter) keys before 2019",0,0,none; from 2019 the unique id_vehicule is used instead
+"Duplicated (accident, vehicle letter) keys from 2019",54,2.3641872909171865e-5,solved by joining on id_vehicule
+Users whose vehicle is missing from the vehicle table,22,7.320532162758057e-6,"kept, vehicle variables set to missing"
+Accidents without any user,0,0,none
+Accidents without a place row,0,0,"kept, place variables missing"
+Birth year giving an age below 0 or above 105,395,1.3143682746770148e-4,birth year set to missing
+Users with unknown severity,418,1.390901110924031e-4,excluded from severity analyses (mostly hit-and-run users added from 2021)
+Invalid time of day,0,0,set to missing
+Invalid calendar date,0,0,none
+Mainland accidents with coordinates outside mainland France,11,8.522130811609e-6,coordinates set to missing
+Speed limit outside 5-130 km/h,248,6.69197745235339e-4,set to missing
+Accidents where the worst severity cannot be computed,0,0,none

@@ -1,0 +1,8 @@
+check,ok
+Every user kept exactly once after the joins,TRUE
+Every accident kept exactly once,TRUE
+Users per accident match n_users,TRUE
+Killed users match the accident totals,TRUE
+All users have a mode,TRUE
+Ages within 0-105,TRUE
+"Info: joining users and vehicles on the accident id alone gives 5,703,904 rows instead of 3,005,246 (+90%)",TRUE

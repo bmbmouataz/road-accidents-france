@@ -1,0 +1,14 @@
+project:
+  type: default
+  output-dir: docs
+  render:
+    - index.qmd
+    - site/dashboard.qmd
+    - site/report.qmd
+  resources:
+    - figures/04_geography/interactive_map.html
+
+execute:
+  echo: false
+  warning: false
+  message: false

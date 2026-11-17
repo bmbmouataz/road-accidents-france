@@ -1,0 +1,20 @@
+---
+title: "Road accidents in France, 2005-2025"
+subtitle: "Who gets seriously hurt, where and why"
+author: "Mouataz Bounit"
+format:
+  html:
+    theme: cosmo
+    toc: false
+---
+
+An end-to-end analysis of the 1.34 million injury accidents recorded by the French police between 2005
+and 2025, from the raw official files to maps, statistical models and machine learning.
+
+- **[Interactive dashboard](site/dashboard.html)**: filter by years, department and mode of transport;
+  maps of deaths per inhabitant and per accident; model results.
+- **[Full report](site/report.html)**: data engineering, exploratory analysis, geography, logistic
+  regression, machine learning, evaluation and discussion.
+- **[Interactive map of 2025 fatal accidents](figures/04_geography/interactive_map.html)**.
+
+Data: ONISR road injury accident databases (BAAC) on data.gouv.fr, Licence Ouverte 2.0; populations INSEE.

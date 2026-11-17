@@ -1,0 +1,4 @@
+model,chosen
+Penalised logistic,"alpha=1.0, lambda=0.00041, 64 non-zero coefficients"
+Random forest,"mtry=4, min.node.size=50, 300 trees"
+XGBoost,"max_depth=8, eta=0.05, 484 rounds"

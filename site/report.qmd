@@ -1,0 +1,416 @@
+---
+title: "Road accidents in France, 2005-2025"
+subtitle: "Who gets seriously hurt, where and why: data engineering, statistics and machine learning"
+author: "Mouataz Bounit"
+date: last-modified
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    fig-align: center
+    df-print: kable
+    embed-resources: false
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+suppressPackageStartupMessages(library(tidyverse))
+res <- function(f) read_csv(file.path("../results", paste0(f, ".csv")), show_col_types = FALSE)
+fig <- function(path) knitr::include_graphics(file.path("../figures", path))
+n <- function(x, d = 0) format(round(x, d), big.mark = ",", nsmall = d)
+p <- function(x, d = 0) paste0(format(round(100 * x, d), nsmall = d), "%")
+
+yearly <- res("eda_yearly")
+quality <- res("quality_checks")
+consistency <- res("consistency_checks")
+modes <- res("eda_modes")
+geo <- res("geo_departments")
+odds <- res("logit_odds_ratios")
+fit <- res("logit_fit")
+inter <- res("logit_interactions")
+tuning <- res("ml_tuning")
+settings <- res("ml_chosen_settings")
+metrics <- res("ml_test_metrics")
+paired <- res("ml_paired_differences")
+confusion <- res("ml_confusion")
+groups <- res("ml_by_group")
+missed <- res("ml_missed_by_mode")
+shap <- res("ml_shap_importance")
+
+or <- function(var, lvl) filter(odds, variable == var, level == lvl)
+or_txt <- function(var, lvl) with(or(var, lvl), sprintf("%.2f [%.2f-%.2f]", odds_ratio, ci_low, ci_high))
+met <- function(m, col) metrics[[col]][metrics$model == m]
+y05 <- filter(yearly, year == 2005); y25 <- filter(yearly, year == 2025); y13 <- filter(yearly, year == 2013)
+naive <- consistency$check[str_starts(consistency$check, "Info")]
+```
+
+# Introduction and data
+
+## Context and question
+
+France recorded `r n(y25$Killed)` road deaths in 2025. The number fell steadily until 2013 and has barely
+moved since. Behind each death there are about six people hospitalised, and the share of each road user
+group in these casualties is very uneven.
+
+This project asks one question:
+
+> **Given that an injury accident has happened, which factors make it more likely that a person is killed
+> or hospitalised?**
+
+The question is about **severity**, not about the risk of having an accident: the data only contains
+accidents in which at least one person was injured. Accidents with material damage only, and the traffic
+volumes that would give an exposure measure, are not available.
+
+## The BAAC databases
+
+Every injury accident attended by the police produces a *Bulletin d'Analyse d'Accident Corporel* (BAAC).
+ONISR publishes them each year on data.gouv.fr as four tables linked by the accident number:
+
+| Table | One row per | Main variables |
+|---|---|---|
+| Characteristics | accident | date, time, lighting, weather, built-up area, intersection, collision type, department, coordinates |
+| Places | accident (main road) | road category, speed limit, surface, layout, number of lanes |
+| Vehicles | vehicle involved | vehicle category, obstacle hit, impact point, manoeuvre |
+| Users | person involved | role (driver, passenger, pedestrian), sex, year of birth, severity, safety equipment, trip purpose |
+
+Severity follows the ONISR definitions: *killed* means died within 30 days, *hospitalised* means admitted
+for more than 24 hours, *slightly injured* means treated without such an admission.
+
+After cleaning, the study covers **`r n(sum(yearly$Accidents))` accidents** and
+**`r n(as.numeric(str_extract(naive, "(?<=instead of )[0-9,]+") |> str_remove_all(",")))` people** from 2005 to
+2025, in mainland France and the five overseas departments.
+
+# Data engineering
+
+## Harmonising 21 years of files
+
+The 84 raw files change format several times: the separator goes from `,` to `;`, the encoding from latin1
+to UTF-8, the accident key is called `Accident_Id` in 2022, the time is written `1930` and then `19:30`,
+departments use three digits before 2019 (`590` for Nord, `201` for Corse-du-Sud), and coordinates switch
+from degrees × 100,000 with `0000000` for missing values to decimal degrees. `R/02_harmonise.R` detects the
+format of each file and builds one schema with English variable names.
+
+## Quality checks
+
+```{r quality}
+quality |>
+  transmute(Check = check, Rows = n(n), Share = p(share, 2), Action = action) |>
+  knitr::kable(align = "lrrl")
+```
+
+Three choices shape the rest of the analysis:
+
+- **Scope.** Overseas collectivities (Polynesia, New Caledonia, Saint-Martin...) only appear from 2019 and
+  are excluded so that the series stay comparable.
+- **Severity break.** ONISR warns that "hospitalised" is recorded differently from 2018 and cannot be
+  compared with earlier years: the number of hospitalised people falls by about a quarter between 2017 and 2018
+  while deaths barely move. All severity rates and models therefore use **2019-2025**, where vehicle
+  categories are also coded consistently.
+- **Several place rows per accident from 2023.** One row per road at an intersection: the main road (lowest
+  road category code) is kept.
+
+## Correct joins
+
+Each person is linked to **their own vehicle** (pedestrians to the vehicle that hit them), with the unique
+`id_vehicule` from 2019 and the vehicle letter before. The first version of this project joined users and
+vehicles on the accident number alone, which pairs every person with every vehicle of the accident.
+`r str_replace(str_remove(naive, "^Info: "), "^.", toupper)`: every count of that version was inflated.
+
+```{r consistency}
+consistency |>
+  filter(!str_starts(check, "Info")) |>
+  transmute(`Consistency test` = check, Result = if_else(ok, "passed", "FAILED")) |>
+  knitr::kable()
+```
+
+## New variables
+
+Age and age group, period of the day, weekday, vehicle groups mapped across the two vehicle nomenclatures,
+the person's **mode** (their vehicle, or *pedestrian*), the **heaviest other party** in the accident, the
+use of a **belt or helmet** (from 2019), speed-limit classes, and the target **severe = killed or
+hospitalised**.
+
+# Exploratory analysis
+
+## Over time
+
+```{r}
+#| fig-cap: "Accidents and casualties per year. The dashed line marks the change in how hospitalised people are recorded."
+fig("03_eda/01_yearly_trend.png")
+```
+
+Deaths fell from `r n(y05$Killed)` in 2005 to `r n(y13$Killed)` in 2013
+(`r p(y13$Killed / y05$Killed - 1)`), then stayed between 3,100 and 3,700 apart from the 2020 lockdowns
+(`r n(yearly$Killed[yearly$year == 2020])`). There were `r n(y25$Killed)` deaths in 2025.
+
+```{r}
+fig("03_eda/02_month.png")
+```
+
+```{r}
+fig("03_eda/03_hour_weekday.png")
+fig("03_eda/04_fatality_by_hour.png")
+```
+
+Accidents follow commuting hours on weekdays and shift to nights at weekends. Night accidents are far fewer
+but much deadlier.
+
+## Conditions, roads and vehicles
+
+```{r}
+fig("03_eda/05_conditions.png")
+fig("03_eda/06_roads.png")
+```
+
+```{r}
+fig("03_eda/07_mode_severity.png")
+fig("03_eda/08_killed_by_mode_year.png")
+```
+
+```{r modes}
+sev <- modes |>
+  group_by(mode) |>
+  summarise(people = first(total), severe = sum(share[severity %in% c("Killed", "Hospitalised")]),
+            killed = sum(share[severity == "Killed"])) |>
+  arrange(desc(severe))
+```
+
+Between 2019 and 2025, `r p(sev$severe[sev$mode == "Motorcycle"])` of motorcyclists,
+`r p(sev$severe[sev$mode == "Pedestrian"])` of pedestrians and `r p(sev$severe[sev$mode == "Bicycle"])` of
+cyclists involved in an accident were killed or hospitalised, against `r p(sev$severe[sev$mode == "Car"], 1)`
+of car occupants.
+
+## Who is involved
+
+```{r}
+fig("03_eda/09_age_sex.png")
+fig("03_eda/10_opponent.png")
+```
+
+# Geography
+
+```{r geo}
+main <- filter(geo, !str_starts(department, "97"))
+```
+
+Counts mostly reflect population, so every map shows a rate. Over 2021-2025, deaths per million
+inhabitants range from `r n(min(main$killed_per_million))` in `r main$name[which.min(main$killed_per_million)]`
+to `r n(max(main$killed_per_million))` in `r main$name[which.max(main$killed_per_million)]`, and deaths per 100
+accidents from `r n(min(main$killed_per_100_acc), 1)` in `r main$name[which.min(main$killed_per_100_acc)]` to
+`r n(max(main$killed_per_100_acc), 1)` in `r main$name[which.max(main$killed_per_100_acc)]`.
+
+```{r}
+fig("04_geography/01_department_maps.png")
+fig("04_geography/03_frequency_vs_severity.png")
+fig("04_geography/02_change_map.png")
+```
+
+The [interactive map](../figures/04_geography/interactive_map.html) shows the department rates and every
+fatal accident of 2025.
+
+# Statistical model: logistic regression
+
+## Specification
+
+$$\text{logit}\, P(\text{severe}_i = 1) = \alpha_{t} + \sum_k \beta_k x_{ik}$$
+
+for each person $i$ involved in an accident in 2019-2025, with year fixed effects $\alpha_t$ and only
+variables known before the impact: mode, passenger, sex, age group, belt or helmet, heaviest other party,
+road category, built-up area, speed limit, intersection, lighting, weather, surface, time of day, weekend,
+overseas. Collision type, obstacle and impact point describe the crash itself and are left out on purpose.
+
+People in the same accident share the road, the speed and the impact, so they are not independent.
+Standard errors are **clustered by accident**; they are in median `r p(fit$se_ratio_cluster_vs_iid[1] - 1)`
+wider than the naive ones.
+
+## Results
+
+The model is estimated on `r n(fit$n[1])` people. In-sample ROC-AUC is `r n(fit$auc_in_sample[1], 3)` and
+McFadden's pseudo-R² `r n(fit$mcfadden_r2[1], 3)`.
+
+```{r odds-table}
+key <- tribble(~var, ~lvl, ~label,
+  "mode", "Pedestrian", "Pedestrian (vs car occupant)",
+  "mode", "Motorcycle", "Motorcyclist (vs car occupant)",
+  "mode", "Bicycle", "Cyclist (vs car occupant)",
+  "protection", "Not worn", "Belt or helmet not worn (vs worn)",
+  "age_group", "75+", "Aged 75+ (vs 35-44)",
+  "opponent", "Heavy goods vehicle", "Other party: heavy goods vehicle (vs car)",
+  "opponent", "No other vehicle", "No other vehicle (vs car)",
+  "built_up", "Outside built-up area", "Outside built-up area",
+  "speed", "130", "Speed limit 130 (vs 40-50)",
+  "road", "Motorway", "Motorway (vs municipal road)",
+  "period", "Night (22h-6h)", "Night, 22h-6h (vs 10h-16h)",
+  "lighting", "Night, no street lights", "Night without street lights (vs daylight)",
+  "sex", "Male", "Man (vs woman)")
+key |>
+  mutate(`Odds ratio [95% CI]` = map2_chr(var, lvl, or_txt)) |>
+  select(Factor = label, `Odds ratio [95% CI]`) |>
+  knitr::kable()
+```
+
+```{r}
+#| fig-height: 12
+fig("05_model/01_odds_ratios.png")
+```
+
+Two raw contrasts shrink once the other factors are held equal. Unlit roads at night multiplied the share
+of people killed by 2.7 in the descriptive analysis; their odds ratio is `r or_txt("lighting", "Night, no street lights")`,
+because most of that effect came from night-time and rural roads. Men make up nearly four deaths in five,
+but once involved in the same kind of accident they are barely more likely to be seriously hurt
+(`r or_txt("sex", "Male")`): the gap comes from exposure and behaviour, not from the outcome of a given crash.
+
+Correlated variables must be read together: the 130 km/h limit has a high odds ratio but only occurs on
+motorways, whose own odds ratio is low.
+
+## Interactions
+
+```{r}
+inter |> transmute(Interaction = interaction, `Wald statistic` = n(wald_stat, 1), df,
+                   `p-value` = format.pval(p_value, digits = 2)) |> knitr::kable()
+```
+
+```{r}
+fig("05_model/02_mode_by_location.png")
+fig("05_model/03_age_pedestrian.png")
+```
+
+Probabilities are averaged over the observed population (each person given the level in turn), which is
+easier to read than interaction coefficients.
+
+# Machine learning
+
+## Set-up
+
+- **Same population and target** as the logistic regression.
+- **Chronological split**: train 2019-2022, validation 2023 (tuning, early stopping, decision thresholds),
+  test 2024-2025. The final models are refitted on 2019-2023 with the tuned settings. A random split would
+  mix years and hide any drift.
+- **Models**: a prevalence baseline, a "rate by mode" baseline, penalised logistic regression (glmnet;
+  alpha and lambda chosen on the 2023 log loss), random forest (ranger, probability forest) and XGBoost
+  (early stopping on 2023).
+- **Two feature sets**: pre-impact variables only, and pre-impact plus crash variables (collision type,
+  obstacle, impact point, manoeuvre).
+
+```{r tuning}
+tuning |>
+  transmute(Model = model, Features = features, Setting = setting, `ROC-AUC` = n(roc_auc, 4),
+            `PR-AUC` = n(pr_auc, 4), `Log loss` = n(log_loss, 4)) |>
+  knitr::kable(caption = "Validation year 2023")
+settings |> rename(Model = model, `Chosen setting` = chosen) |> knitr::kable()
+```
+
+# Evaluation and interpretability
+
+## Performance on 2024-2025
+
+```{r metrics}
+metrics |>
+  transmute(Model = label, `ROC-AUC [95% CI]` = sprintf("%.3f [%.3f-%.3f]", roc_auc, roc_auc_low, roc_auc_high),
+            `PR-AUC [95% CI]` = sprintf("%.3f [%.3f-%.3f]", pr_auc, pr_auc_low, pr_auc_high),
+            `Log loss` = n(log_loss, 4), Brier = n(brier, 4)) |>
+  knitr::kable(caption = sprintf("Test years 2024-2025, %.1f%% killed or hospitalised. Intervals: 200 bootstrap samples of whole accidents.",
+                                 100 * metrics$prevalence[1]))
+```
+
+```{r}
+paired |> transmute(Comparison = comparison, Difference = n(median, 4),
+                    `95% interval` = sprintf("[%.4f, %.4f]", low, high)) |> knitr::kable()
+```
+
+XGBoost ranks people best (ROC-AUC `r n(met("xgboost", "roc_auc"), 3)`), ahead of the random forest
+(`r n(met("random_forest", "roc_auc"), 3)`) and the penalised logistic regression
+(`r n(met("logistic", "roc_auc"), 3)`). The gain over the logistic regression is small but certain (paired
+bootstrap interval above zero). Adding the crash variables raises XGBoost to
+`r n(met("xgboost_crash", "roc_auc"), 3)`, which shows how much of the outcome is decided by the crash itself.
+
+```{r}
+fig("07_evaluation/01_roc_pr_curves.png")
+fig("07_evaluation/02_calibration.png")
+```
+
+## Decisions and errors
+
+```{r}
+confusion |>
+  transmute(Model = label, Threshold = n(threshold, 3), Precision = p(precision, 1), Recall = p(recall, 1),
+            F1 = n(f1, 3), `Share flagged` = p(flagged, 1)) |>
+  knitr::kable(caption = "Threshold chosen on 2023 to maximise F1, applied unchanged to 2024-2025")
+fig("07_evaluation/03_confusion_matrices.png")
+```
+
+```{r}
+missed |>
+  filter(severe_cases >= 300) |>
+  transmute(Mode = mode, `Severe cases` = n(severe_cases), `Missed by XGBoost` = p(missed)) |>
+  knitr::kable()
+fig("07_evaluation/04_auc_by_mode.png")
+```
+
+The global ROC-AUC is partly carried by the differences *between* modes. *Within* a mode the task is much
+harder: ROC-AUC is `r n(groups$xgb_auc[groups$group == "Car"], 2)` for car occupants but
+`r n(groups$xgb_auc[groups$group == "Pedestrian"], 2)` for pedestrians and
+`r n(groups$xgb_auc[groups$group == "E-scooter / PMD"], 2)` for e-scooter riders. Performance is stable
+across the two test years (`r n(groups$xgb_auc[groups$group == "2024"], 3)` in 2024,
+`r n(groups$xgb_auc[groups$group == "2025"], 3)` in 2025).
+
+## What the model uses
+
+```{r}
+fig("07_evaluation/05_shap.png")
+```
+
+SHAP values computed on the final XGBoost rank the mode of transport first, then the heaviest other party,
+the road and the location. The belt-or-helmet variable has one of the largest odds ratios but a modest
+mean SHAP value: not wearing one is rare (a few percent of people), so it matters a lot for few people.
+SHAP importance measures how much a variable moves predictions across the population, not the size of its
+effect for the people it concerns.
+
+# Dashboard
+
+The [interactive dashboard](dashboard.html) (Quarto, Observable JS) filters every figure by years,
+department and mode of transport, maps deaths per inhabitant and per accident, and summarises the models.
+It is a static page: it needs no server and can be published on GitHub Pages.
+
+# Discussion and conclusion
+
+## Main results
+
+1. **The mode of transport decides most of the outcome.** Pedestrians, motorcyclists and cyclists are many
+   times more likely than car occupants to be killed or hospitalised in the same situation.
+2. **The other party and the place come next.** Being hit by a heavy goods vehicle, being outside built-up
+   areas, on departmental roads, at night, and being old all raise the risk. Not wearing a belt or helmet
+   multiplies the odds by about four.
+3. **Some intuitions do not survive adjustment.** Darkness and sex matter much less than raw rates suggest.
+4. **Geography is about road type, not population.** Dense departments have many accidents but few deaths
+   per accident; rural departments the opposite.
+
+## Statistics and machine learning
+
+The logistic regression and XGBoost agree on what matters. The regression gives effects with confidence
+intervals and is easy to explain; XGBoost predicts better (about two points of ROC-AUC, four of PR-AUC)
+because it captures interactions without specifying them. Both are well calibrated. For a public-health
+message the regression is the better tool; for ranking cases, XGBoost.
+
+## Limits
+
+- **Selection.** Only injury accidents are recorded, so nothing here measures the risk of an accident or
+  the effect of a factor on accident frequency.
+- **No exposure data.** Without kilometres travelled per mode, the number of deaths per mode cannot be
+  turned into a risk per kilometre.
+- **Recording.** "Hospitalised" changed in 2018; equipment use may be checked more carefully when someone is
+  badly hurt; hit-and-run users from 2021 lack information.
+- **Model scope.** Variables are coarse (no speed driven, alcohol or drugs, which the open data hides for
+  privacy), so within-mode prediction stays limited.
+- **Causality.** Odds ratios are associations adjusted for the other variables, not causal effects.
+
+## Perspectives
+
+Adding exposure data (traffic counts, mobility surveys) to estimate risks per kilometre; modelling the full
+ordinal severity scale; a mixed model with department random effects; using the 2025 coordinates to study
+dangerous road sections; and updating the pipeline each year when ONISR publishes new data.

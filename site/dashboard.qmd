@@ -1,0 +1,446 @@
+---
+title: "Road accidents in France, 2005-2025"
+author: "Mouataz Bounit"
+format:
+  dashboard:
+    orientation: rows
+    scrolling: true
+    css: dashboard.css
+    embed-resources: true
+---
+
+# Overview
+
+## {.sidebar}
+
+```{r}
+#| echo: false
+# The data is written into the page itself (ojs_define), so the dashboard also works
+# when the HTML file is opened directly from the disk. Everything is read as text,
+# "NA" included, and converted in the OJS cells below.
+read_txt <- function(f) readr::read_csv(file.path("data", f), col_types = readr::cols(.default = "c"),
+                                        na = character())
+ojs_define(people_d = read_txt("people.csv"), accidents_d = read_txt("accidents.csv"),
+           deps_d = read_txt("departments.csv"), odds_d = read_txt("logit_odds_ratios.csv"),
+           metrics_d = read_txt("ml_test_metrics.csv"), shap_d = read_txt("ml_shap_importance.csv"),
+           france_txt = paste(readLines(file.path("data", "departments.geojson"), warn = FALSE),
+                              collapse = "\n"))
+```
+
+<!-- One definition per OJS cell: cells holding several definitions were registered
+     unreliably by the dashboard runtime. -->
+
+```{ojs}
+//| output: false
+peopleRaw = transpose(people_d)
+```
+
+```{ojs}
+//| output: false
+accidentsRaw = transpose(accidents_d)
+```
+
+```{ojs}
+//| output: false
+depsRaw = transpose(deps_d)
+```
+
+```{ojs}
+//| output: false
+france = JSON.parse(france_txt)
+```
+
+```{ojs}
+//| output: false
+oddsRaw = transpose(odds_d)
+```
+
+```{ojs}
+//| output: false
+metricsRaw = transpose(metrics_d)
+```
+
+```{ojs}
+//| output: false
+shapRaw = transpose(shap_d)
+```
+
+```{ojs}
+//| output: false
+// Department codes ("01", "2A") must stay text, so numbers are converted by hand
+people = peopleRaw.map(d => ({...d, year: +d.year, people: +d.people, killed: +d.killed,
+  hospitalised: +d.hospitalised, slight: +d.slight}))
+```
+
+```{ojs}
+//| output: false
+accidents = accidentsRaw.map(d => ({...d, year: +d.year, accidents: +d.accidents,
+  fatal_accidents: +d.fatal_accidents, population: d.population === "NA" ? NaN : +d.population}))
+```
+
+```{ojs}
+//| output: false
+depName = new Map(depsRaw.map(d => [d.department, d.name]))
+```
+
+```{ojs}
+//| output: false
+modes = [...new Set(people.map(d => d.mode))].sort()
+```
+
+```{ojs}
+//| output: false
+half = Math.max(340, Math.min(760, (width - 80) / 2))
+```
+
+```{ojs}
+//| output: false
+blue = "#2a78d6"
+```
+
+```{ojs}
+//| output: false
+grey = "#c9c8c2"
+```
+
+```{ojs}
+viewof yearFrom = Inputs.range([2005, 2025], {step: 1, value: 2019, label: "From"})
+viewof yearTo = Inputs.range([2005, 2025], {step: 1, value: 2025, label: "To"})
+viewof dep = Inputs.select(
+  ["All departments", ...[...depName].sort((a, b) => a[1].localeCompare(b[1])).map(([c, n]) => `${n} (${c})`)],
+  {label: "Department"})
+viewof mode = Inputs.select(["All modes", ...modes], {label: "Mode of transport"})
+```
+
+::: {.sidebar-note}
+**Mode** is the person's own mode: a pedestrian hit by a car counts as a pedestrian.
+
+"Hospitalised" is recorded differently from 2018 and cannot be compared with earlier years.
+:::
+
+```{ojs}
+//| output: false
+y0 = Math.min(yearFrom, yearTo)
+```
+
+```{ojs}
+//| output: false
+y1 = Math.max(yearFrom, yearTo)
+```
+
+```{ojs}
+//| output: false
+depCode = dep === "All departments" ? null : dep.match(/\(([^)]+)\)$/)[1]
+```
+
+```{ojs}
+//| output: false
+inPlace = d => !depCode || d.department === depCode
+```
+
+```{ojs}
+//| output: false
+inMode = d => mode === "All modes" || d.mode === mode
+```
+
+```{ojs}
+//| output: false
+inYears = d => d.year >= y0 && d.year <= y1
+```
+
+```{ojs}
+//| output: false
+selected = people.filter(d => inYears(d) && inPlace(d) && inMode(d))
+```
+
+```{ojs}
+//| output: false
+sum = (rows, key) => d3.sum(rows, d => d[key])
+```
+
+```{ojs}
+//| output: false
+fmt = d3.format(",")
+```
+
+```{ojs}
+//| output: false
+pct = d3.format(".1%")
+```
+
+```{ojs}
+//| output: false
+placeLabel = depCode ? depName.get(depCode) : "France"
+```
+
+```{ojs}
+//| output: false
+scopeLabel = `${placeLabel}, ${mode === "All modes" ? "all modes" : mode.toLowerCase()}, ${y0 === y1 ? y0 : `${y0}-${y1}`}`
+```
+
+## Column
+
+### Row {height=150px}
+
+```{ojs}
+{
+  const involved = sum(selected, "people")
+  const killed = sum(selected, "killed")
+  const severe = killed + sum(selected, "hospitalised")
+  const acc = sum(accidents.filter(d => inYears(d) && inPlace(d)), "accidents")
+  const kpi = (value, label, note = "") => html`<div class="kpi"><div class="kpi-value">${value}</div>
+    <div class="kpi-label">${label}</div><div class="kpi-note">${note}</div></div>`
+  return html`<div class="kpis">
+    ${kpi(fmt(acc), "injury accidents", mode === "All modes" ? "" : "all modes")}
+    ${kpi(fmt(involved), "people involved")}
+    ${kpi(fmt(killed), "killed", `${pct(killed / involved)} of people involved`)}
+    ${kpi(pct(severe / involved), "killed or hospitalised", y0 < 2018 ? "includes years before the 2018 break" : "")}
+  </div>`
+}
+```
+
+### Row {height=420px}
+
+```{ojs}
+//| title: People killed per year
+{
+  const yearly = d3.rollups(people.filter(d => inPlace(d) && inMode(d)), v => d3.sum(v, d => d.killed), d => d.year)
+    .map(([year, killed]) => ({year, killed}))
+  return Plot.plot({
+    width: half, height: 260, marginLeft: 50,
+    x: {label: null, tickFormat: d => String(d), type: "band"},
+    y: {label: "killed", grid: true},
+    marks: [
+      Plot.barY(yearly, {x: "year", y: "killed", fill: d => d.year >= y0 && d.year <= y1 ? blue : grey,
+                         tip: true}),
+      Plot.ruleY([0])
+    ],
+    caption: `${placeLabel}, ${mode === "All modes" ? "all modes" : mode.toLowerCase()}. Selected years in blue.`
+  })
+}
+```
+
+```{ojs}
+//| title: Share killed or hospitalised per year
+{
+  const yearly = d3.rollups(people.filter(d => inPlace(d) && inMode(d)),
+      v => (d3.sum(v, d => d.killed) + d3.sum(v, d => d.hospitalised)) / d3.sum(v, d => d.people), d => d.year)
+    .map(([year, share]) => ({year, share}))
+  return Plot.plot({
+    width: half, height: 260, marginLeft: 50,
+    x: {label: null, tickFormat: d => String(d)},
+    y: {label: "share", tickFormat: ".0%", grid: true, domain: [0, d3.max(yearly, d => d.share) * 1.1]},
+    marks: [
+      Plot.ruleX([2017.5], {stroke: "#eb6834", strokeDasharray: "4,3"}),
+      Plot.text([{x: 2017.6, y: d3.max(yearly, d => d.share) * 1.05}], {x: "x", y: "y",
+        text: () => "recording change", textAnchor: "start", fill: "#52514e", fontSize: 10}),
+      Plot.line(yearly, {x: "year", y: "share", stroke: blue, strokeWidth: 2}),
+      Plot.dot(yearly, {x: "year", y: "share", fill: blue, r: 3, tip: true})
+    ]
+  })
+}
+```
+
+### Row {height=420px}
+
+```{ojs}
+//| title: Severity by mode of transport
+{
+  const severityColors = {domain: ["Killed", "Hospitalised", "Slightly injured", "Unharmed"],
+                          range: ["#8f1d1c", "#eb6834", "#86b6ef", "#a3a29b"]}
+  const rows = people.filter(d => inYears(d) && inPlace(d))
+  const byMode = d3.rollups(rows, v => ({
+      Killed: d3.sum(v, d => d.killed), Hospitalised: d3.sum(v, d => d.hospitalised),
+      "Slightly injured": d3.sum(v, d => d.slight),
+      Unharmed: d3.sum(v, d => d.people - d.killed - d.hospitalised - d.slight),
+      total: d3.sum(v, d => d.people)}), d => d.mode)
+    .filter(([m, s]) => s.total >= 200)
+  const severe = new Map(byMode.map(([m, s]) => [m, (s.Killed + s.Hospitalised) / s.total]))
+  const long = byMode.flatMap(([m, s]) => severityColors.domain.map(k => ({mode: m, severity: k, n: s[k]})))
+  return Plot.plot({
+    width: half, height: 320, marginLeft: 140,
+    x: {label: "share of people involved", tickFormat: "%", percent: false},
+    y: {label: null, domain: [...severe].sort((a, b) => b[1] - a[1]).map(d => d[0])},
+    color: {...severityColors, legend: true},
+    marks: [
+      Plot.barX(long, Plot.stackX({x: "n", y: "mode", fill: "severity", offset: "normalize",
+        order: severityColors.domain, tip: true, inset: 0.5}))
+    ],
+    caption: `${placeLabel}, ${y0}-${y1}. Modes with at least 200 people.`
+  })
+}
+```
+
+```{ojs}
+//| title: Departments with the most deaths per million inhabitants
+{
+  const killed = d3.rollup(people.filter(d => inYears(d) && inMode(d)), v => d3.sum(v, d => d.killed), d => d.department)
+  const pop = d3.rollup(accidents.filter(inYears), v => d3.sum(v, d => d.population), d => d.department)
+  const rows = [...killed].map(([c, k]) => ({Department: depName.get(c) ?? c, Code: c, Killed: k,
+      "Killed per million": pop.get(c) ? 1e6 * k / pop.get(c) : NaN}))
+    .filter(d => !Number.isNaN(d["Killed per million"]))
+    .sort((a, b) => b["Killed per million"] - a["Killed per million"])
+  return Inputs.table(rows, {rows: 12, format: {"Killed per million": d3.format(".0f"), Killed: fmt},
+                             layout: "auto"})
+}
+```
+
+# Map
+
+## {.sidebar}
+
+```{ojs}
+viewof mapFrom = Inputs.range([2005, 2025], {step: 1, value: 2021, label: "From"})
+viewof mapTo = Inputs.range([2005, 2025], {step: 1, value: 2025, label: "To"})
+viewof mapMode = Inputs.select(["All modes", ...modes], {label: "Mode of transport"})
+```
+
+::: {.sidebar-note}
+Mainland France. Per-capita rates use INSEE populations (the 2023 estimate is reused for 2024-2025).
+:::
+
+```{ojs}
+//| output: false
+m0 = Math.min(mapFrom, mapTo)
+```
+
+```{ojs}
+//| output: false
+m1 = Math.max(mapFrom, mapTo)
+```
+
+```{ojs}
+//| output: false
+inMapYears = d => d.year >= m0 && d.year <= m1
+```
+
+```{ojs}
+//| output: false
+inMapMode = d => mapMode === "All modes" || d.mode === mapMode
+```
+
+## Column
+
+### Row
+
+```{ojs}
+//| title: Killed per million inhabitants
+{
+  const killed = d3.rollup(people.filter(d => inMapYears(d) && inMapMode(d)), v => d3.sum(v, d => d.killed), d => d.department)
+  const pop = d3.rollup(accidents.filter(inMapYears), v => d3.sum(v, d => d.population), d => d.department)
+  const rate = new Map([...killed].map(([c, k]) => [c, pop.get(c) ? 1e6 * k / pop.get(c) : NaN]))
+  return Plot.plot({
+    width: half, height: half * 0.95,
+    projection: {type: "conic-conformal", parallels: [44, 49], rotate: [-3, 0], domain: france},
+    color: {type: "quantize", n: 7, scheme: "blues", legend: true, label: "killed per million inhabitants"},
+    marks: [
+      Plot.geo(france, {fill: d => rate.get(d.properties.code), stroke: "white", strokeWidth: 0.5,
+        title: d => `${d.properties.nom} (${d.properties.code})\n${d3.format(".0f")(rate.get(d.properties.code))} killed per million\n${fmt(killed.get(d.properties.code) ?? 0)} killed`,
+        tip: true}),
+    ],
+    caption: `${mapMode}, ${m0}-${m1}.`
+  })
+}
+```
+
+```{ojs}
+//| title: Killed per 100 accidents
+{
+  const accRows = accidents.filter(inMapYears)
+  const nAcc = d3.rollup(accRows, v => d3.sum(v, d => d.accidents), d => d.department)
+  const killed = d3.rollup(people.filter(inMapYears), v => d3.sum(v, d => d.killed), d => d.department)
+  const rate = new Map([...nAcc].map(([c, a]) => [c, 100 * (killed.get(c) ?? 0) / a]))
+  return Plot.plot({
+    width: half, height: half * 0.95,
+    projection: {type: "conic-conformal", parallels: [44, 49], rotate: [-3, 0], domain: france},
+    color: {type: "quantize", n: 7, scheme: "oranges", legend: true, label: "killed per 100 accidents"},
+    marks: [
+      Plot.geo(france, {fill: d => rate.get(d.properties.code), stroke: "white", strokeWidth: 0.5,
+        title: d => `${d.properties.nom}\n${d3.format(".1f")(rate.get(d.properties.code))} killed per 100 accidents`,
+        tip: true}),
+    ],
+    caption: `All modes, ${m0}-${m1}. How severe accidents are, independent of population.`
+  })
+}
+```
+
+# Models
+
+## Row
+
+```{ojs}
+//| title: Logistic regression, 2019-2025 - odds ratios of being killed or hospitalised
+{
+  const keep = ["mode", "protection", "age_group", "opponent", "built_up", "speed", "road", "lighting", "period", "sex"]
+  const names = {mode: "Mode", protection: "Belt or helmet", age_group: "Age", opponent: "Other party",
+                 built_up: "Location", speed: "Speed limit", road: "Road", lighting: "Lighting",
+                 period: "Time of day", sex: "Sex"}
+  const rows = oddsRaw.filter(d => keep.includes(d.variable))
+    .map(d => ({term: `${names[d.variable]}: ${d.level}`, or: +d.odds_ratio, lo: +d.ci_low, hi: +d.ci_high}))
+    .sort((a, b) => b.or - a.or)
+  return Plot.plot({
+    width, height: rows.length * 16 + 60, marginLeft: 240,
+    x: {type: "log", label: "odds ratio (log scale), 1 = reference level", grid: true,
+       ticks: [0.05, 0.1, 0.25, 0.5, 1, 2, 4, 8], tickFormat: d => String(d)},
+    y: {label: null, domain: rows.map(d => d.term)},
+    marks: [
+      Plot.ruleX([1], {stroke: "#52514e"}),
+      Plot.ruleY(rows, {y: "term", x1: "lo", x2: "hi", stroke: blue}),
+      Plot.dot(rows, {y: "term", x: "or", fill: d => d.or > 1 ? "#eb6834" : blue, r: 3.5,
+                      title: d => `${d.term}\nOR ${d.or.toFixed(2)} [${d.lo.toFixed(2)}-${d.hi.toFixed(2)}]`, tip: true})
+    ],
+    caption: "841,052 people. All other factors held equal; 95% intervals clustered by accident."
+  })
+}
+```
+
+## Row
+
+```{ojs}
+//| title: Machine learning - test years 2024-2025
+{
+  const rows = metricsRaw.map(d => ({Model: d.label, "ROC-AUC": +d.roc_auc,
+    "95% CI": `${(+d.roc_auc_low).toFixed(3)}-${(+d.roc_auc_high).toFixed(3)}`,
+    "PR-AUC": +d.pr_auc, "Log loss": +d.log_loss, Brier: +d.brier}))
+  return Inputs.table(rows, {format: {"ROC-AUC": d3.format(".3f"), "PR-AUC": d3.format(".3f"),
+    "Log loss": d3.format(".4f"), Brier: d3.format(".4f")}, layout: "auto"})
+}
+```
+
+```{ojs}
+//| title: What drives the XGBoost predictions (mean absolute SHAP value)
+{
+  const names = {mode: "Mode of transport", passenger: "Passenger", sex: "Sex", age_group: "Age",
+    protection: "Belt or helmet", opponent: "Heaviest other party", road: "Road category",
+    built_up: "Built-up area", speed: "Speed limit", intersection: "Intersection", lighting: "Lighting",
+    weather: "Weather", surface: "Road surface", period: "Time of day", weekend: "Weekend", area: "Overseas"}
+  const rows = shapRaw.map(d => ({variable: names[d.variable] ?? d.variable, value: +d.mean_abs_shap}))
+  return Plot.plot({
+    width: half, height: rows.length * 26 + 50, marginLeft: 150,
+    x: {label: "mean |SHAP| (log-odds)", grid: true},
+    y: {label: null, domain: rows.sort((a, b) => b.value - a.value).map(d => d.variable)},
+    marks: [Plot.barX(rows, {y: "variable", x: "value", fill: blue, tip: true}), Plot.ruleX([0])]
+  })
+}
+```
+
+# About
+
+## Row
+
+::: {.card title="Data and method"}
+**Data.** Annual road injury accident databases (BAAC) published by ONISR on data.gouv.fr, 2005-2025:
+1.34 million injury accidents and 3.0 million people involved, mainland France and the five overseas
+departments. Only accidents with at least one injured person are recorded.
+
+**Severity.** *Killed*: died within 30 days. *Hospitalised*: more than 24 hours in hospital. The
+"hospitalised" category is recorded differently from 2018, so severity rates are only comparable from 2019.
+
+**Rates.** Per-capita rates use INSEE population estimates (the 2023 estimate is reused for 2024 and 2025).
+Deaths per 100 accidents need no population and measure how severe accidents are.
+
+**Models.** Logistic regression with errors clustered by accident on 2019-2025. Machine learning models
+trained on 2019-2022, tuned on 2023 and tested on 2024-2025.
+
+Code, figures and full results: see the project repository. Author: Mouataz Bounit.
+:::

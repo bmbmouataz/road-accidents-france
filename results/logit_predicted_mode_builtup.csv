@@ -1,0 +1,21 @@
+mode,built_up,prob
+Car,Built-up area,0.06356480054418386
+Car,Outside built-up area,0.14962844853352114
+Van,Built-up area,0.037355679340482825
+Van,Outside built-up area,0.10889271405851182
+Motorcycle,Built-up area,0.2933742583341611
+Motorcycle,Outside built-up area,0.42254620466254544
+Moped,Built-up area,0.25818853905571315
+Moped,Outside built-up area,0.3940796470538214
+Bicycle,Built-up area,0.20067126482481387
+Bicycle,Outside built-up area,0.37168594911403935
+E-scooter / PMD,Built-up area,0.1606740400668065
+E-scooter / PMD,Outside built-up area,0.26402664736177067
+Heavy goods vehicle,Built-up area,0.037323099926222826
+Heavy goods vehicle,Outside built-up area,0.06530535596869348
+Bus or coach,Built-up area,0.014217247683995399
+Bus or coach,Outside built-up area,0.018879327512817796
+Tram or train,Built-up area,0.007293272284431014
+Tram or train,Outside built-up area,0.0033093332888733304
+Pedestrian,Built-up area,0.3160996808503231
+Pedestrian,Outside built-up area,0.502712594409872
